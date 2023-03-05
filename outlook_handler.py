@@ -1,26 +1,30 @@
-from operator import attrgetter
+import configparser
+import datetime as dt
+from typing import Tuple
 
 from O365 import Account, MSGraphProtocol
-import datetime as dt
-import calendar as cal
-from utils import prtInfo, prtError, prtWarning, prtResult, parse_date
 
-# IDs we get from Azure account
-CLIENT_ID = '0c99ed1d-1787-4d35-8a59-6ad691fd2b07'
-SECRET_ID = 'pGo8Q~IAJtpL2VMWJKAhuyFE2HL9j7oN0rs.gbl6'
-
-
-
+from utils import prtInfo, prtError, prtResult, parse_date
 
 class OutlookHandler:
-    credentials = (CLIENT_ID, SECRET_ID)
 
     def __init__(self):
         protocol = MSGraphProtocol()
         self.scopes = ['calendar', 'calendar_shared']
+        self.credentials = self.load_config()
         self.account = Account(self.credentials, protocol=protocol)
         self.events = []
+    def load_config(self) -> Tuple:
+        config = configparser.ConfigParser()
+        config.read('config.ini')
 
+        try:
+            client_id = config['AZURE']['ClientId']
+            secret_id = config['AZURE']['SecretId']
+        except KeyError:
+            prtError('config.ini is not correct!')
+
+        return client_id, secret_id
     def authenticate(self) -> bool:
 
         prtInfo("\nAuthenticating...")
@@ -56,8 +60,5 @@ class OutlookHandler:
         self.events = events
         return events
 
-
-
     def get_duration(self, start: dt, end: dt) -> int:
         return end.hour - start.hour
-
